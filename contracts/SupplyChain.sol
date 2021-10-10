@@ -161,6 +161,7 @@ contract SupplyChain {
         items[_sku].state = State.Sold;
 
         emit LogSold(_sku);
+        return true;
     }
 
     // 1. Add modifiers to check:
@@ -168,14 +169,27 @@ contract SupplyChain {
     //    - the person calling this function is the seller.
     // 2. Change the state of the item to shipped.
     // 3. call the event associated with this function!
-    function shipItem(uint256 _sku) public {}
+    function shipItem(uint256 _sku) public isOwner returns (bool) {
+        items[_sku].state = State.Shipped;
+        emit LogShipped(_sku);
+        return true;
+    }
 
     // 1. Add modifiers to check
     //    - the item is shipped already
     //    - the person calling this function is the buyer.
     // 2. Change the state of the item to received.
     // 3. Call the event associated with this function!
-    function receiveItem(uint256 sku) public {}
+    function receiveItem(uint256 _sku)
+        public
+        shipped(_sku)
+        verifyCaller(items[_sku].buyer)
+        returns (bool)
+    {
+        items[_sku].state = State.Received;
+        emit LogReceived(_sku);
+        return true;
+    }
 
     // Uncomment the following code block. it is needed to run tests
     function fetchItem(uint256 _sku)
