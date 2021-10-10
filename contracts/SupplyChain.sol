@@ -22,8 +22,8 @@ contract SupplyChain {
     // <struct Item: name, sku, price, state, seller, and buyer>
     struct Item {
         string name;
-        uint256 sku;
-        uint256 price;
+        uint sku;
+        uint price;
         State state;
         address payable seller;
         address payable buyer;
@@ -52,8 +52,8 @@ contract SupplyChain {
     // Create a modifer, `isOwner` that checks if the msg.sender is the owner of the contract
 
     // <modifier: isOwner
-    modifier isOwner() {
-        require(msg.sender == owner, "Only owner can call");
+    modifier isOwner(address _address) {
+        require(msg.sender == _address, "Only owner can call");
         _;
     }
 
@@ -175,7 +175,7 @@ contract SupplyChain {
     //    - the person calling this function is the seller.
     // 2. Change the state of the item to shipped.
     // 3. call the event associated with this function!
-    function shipItem(uint256 _sku) public isOwner {
+    function shipItem(uint256 _sku) public isOwner(items[_sku].seller) {
         items[_sku].state = State.Shipped;
         emit LogShipped(_sku);
     }
