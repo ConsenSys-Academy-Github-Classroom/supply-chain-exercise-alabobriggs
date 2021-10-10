@@ -85,14 +85,27 @@ contract SupplyChain {
 
     // modifier forSale
     modifier forSale(uint256 _sku) {
+        require(items[_sku].price > 0, "item is not for sale");
         _;
-
-        require(items[_sku].price > 0, "No price specied ");
     }
 
     // modifier sold(uint _sku)
+    modifier sold(uint256 _sku) {
+        require(items[_sku].state == State.Sold, "item has been sold");
+        _;
+    }
+
     // modifier shipped(uint _sku)
+    modifier shipped(uint256 _sku) {
+        require(items[_sku].state == State.Shipped, "item has been shipped");
+        _;
+    }
+
     // modifier received(uint _sku)
+    modifier received(uint256 _sku) {
+        require(items[_sku].state == State.Received, "Item has been recieved");
+        _;
+    }
 
     constructor() public {
         // 1. Set the owner to the transaction sender
@@ -135,14 +148,27 @@ contract SupplyChain {
     //    - check the value after the function is called to make
     //      sure the buyer is refunded any excess ether sent.
     // 6. call the event associated with this function!
-    function buyItem(uint256 sku) public {}
+    function buyItem(uint256 _sku)
+        public
+        payable
+        forSale(_sku)
+        paidEnough(msg.value)
+        checkValue(_sku)
+        returns (bool)
+    {
+        items[_sku].seller.transfer(msg.value);
+        items[_sku].buyer = msg.sender;
+        items[_sku].state = State.Sold;
+
+        emit LogSold(_sku);
+    }
 
     // 1. Add modifiers to check:
     //    - the item is sold already
     //    - the person calling this function is the seller.
     // 2. Change the state of the item to shipped.
     // 3. call the event associated with this function!
-    function shipItem(uint256 sku) public {}
+    function shipItem(uint256 _sku) public {}
 
     // 1. Add modifiers to check
     //    - the item is shipped already
