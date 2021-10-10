@@ -3,7 +3,7 @@ pragma solidity >=0.5.16 <0.9.0;
 
 contract SupplyChain {
     // <owner>
-    address public owner;
+    address payable public owner;
 
     // <skuCount>
     uint256 public skuCount;
@@ -72,6 +72,8 @@ contract SupplyChain {
         _;
         uint256 _price = items[_sku].price;
         uint256 amountToRefund = msg.value - _price;
+
+        // this is not possible as transfer is also made from msg.sender and not contract
         items[_sku].buyer.transfer(amountToRefund);
     }
 
@@ -85,6 +87,7 @@ contract SupplyChain {
 
     // modifier forSale
     modifier forSale(uint256 _sku) {
+        require(items[_sku].state == State.ForSale, "item is not for sale");
         require(items[_sku].price > 0, "item is not for sale");
         _;
     }
@@ -152,16 +155,19 @@ contract SupplyChain {
         public
         payable
         forSale(_sku)
-        paidEnough(msg.value)
-        checkValue(_sku)
-        returns (bool)
+        paidEnough(items[_sku].price)
     {
-        items[_sku].seller.transfer(msg.value);
+        uint256 _price = items[_sku].price;
+        uint256 amountToSend = msg.value - _price;
+
+        // make transfer
+        items[_sku].seller.transfer(amountToSend);
+
+        // update values
         items[_sku].buyer = msg.sender;
         items[_sku].state = State.Sold;
 
         emit LogSold(_sku);
-        return true;
     }
 
     // 1. Add modifiers to check:
@@ -169,10 +175,9 @@ contract SupplyChain {
     //    - the person calling this function is the seller.
     // 2. Change the state of the item to shipped.
     // 3. call the event associated with this function!
-    function shipItem(uint256 _sku) public isOwner returns (bool) {
+    function shipItem(uint256 _sku) public isOwner {
         items[_sku].state = State.Shipped;
         emit LogShipped(_sku);
-        return true;
     }
 
     // 1. Add modifiers to check
@@ -180,15 +185,13 @@ contract SupplyChain {
     //    - the person calling this function is the buyer.
     // 2. Change the state of the item to received.
     // 3. Call the event associated with this function!
-    function receiveItem(uint256 _sku)
+    function receiveItem(uint256 sku)
         public
-        shipped(_sku)
-        verifyCaller(items[_sku].buyer)
-        returns (bool)
+        shipped(sku)
+        verifyCaller(items[sku].buyer)
     {
-        items[_sku].state = State.Received;
-        emit LogReceived(_sku);
-        return true;
+        items[sku].state = State.Received;
+        emit LogReceived(sku);
     }
 
     // Uncomment the following code block. it is needed to run tests
